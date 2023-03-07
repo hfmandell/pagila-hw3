@@ -9,13 +9,22 @@
  * 1. https://www.postgresqltutorial.com/postgresql-ntile-function/
  * 2. https://www.postgresqltutorial.com/postgresql-window-function/
  */
+WITH total_payments AS (
+    SELECT
+        customer_id,
+        first_name || ' ' || last_name AS name,
+        sum(amount) AS total_payment
+    FROM customer
+    JOIN payment USING (customer_id)
+    GROUP BY customer_id,first_name,last_name
+    ORDER BY total_payment DESC
+),
 
-SELECT
-    customer_id,
-    first_name || ' ' || last_name AS name,
-    sum(amount) AS total_payment,
-    'fixme' as percentile
-FROM customer
-JOIN payment USING (customer_id)
-GROUP BY customer_id,first_name,last_name
-ORDER BY total_payment DESC
+percentiles AS (
+    SELECT customer_id, name, total_payment, (NTILE(100) OVER(ORDER BY total_payment)) AS percentile
+    FROM total_payments
+    ORDER BY name
+)
+
+SELECT * FROM percentiles
+WHERE percentile >= 90;
